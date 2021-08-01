@@ -1,0 +1,60 @@
+p.trigger-text {
+  font-size: 22px;
+  font-family: sans-serif;
+  opacity: 0.7;
+  margin-top: 5;
+}
+
+.form-label {
+  font-size: small;
+}
+
+#draggable {
+  width: 150px;
+  height: 150px;
+  padding: 0.5em;
+  border: 1rem;
+  border-color: black;
+}
+
+#sortable {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ui-state-highlight {
+  height: 1.5em;
+  line-height: 1.2em;
+}
+
+/* .highcharts-background {
+  opacity: 0.3;
+  fill: rgb(164, 214, 248);
+} */
+.highcharts-container,
+.highcharts-container svg {
+  width: 100% !important;
+}
+
+#emotion_title,
+#heatmap_title {
+  font-family: "Lucida Grande";
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* #heatmap_container {
+  background-image: url("./emo_heatmap.png");
+} */
+#full-threshold3,
+#full-threshold5,
+#full-threshold7 {
+  height: 10px;
+}
+
+.dropdown-item {
+  align-items: center;
+}
