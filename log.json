@@ -1,0 +1,53 @@
+{
+  "student_status": {
+    "time1": {
+      "engagement": [0.4, 0.5, 0.2, 0.1],
+      "confusion": [0.1, 0.2, 0, 1],
+      "gaze": []
+    },
+    "time2": {
+      "engagement": [0.4, 0.5, 0.2, 0.1],
+      "confusion": [0.1, 0.2, 0, 1],
+      "gaze": []
+    }
+  },
+  "user_behavior": [
+    {
+      "time": 1,
+      "action": "resize",
+      "chart": "fullchart1",
+      "from": [3, 2],
+      "to": [5, 4]
+    },
+    {
+      "time": 1,
+      "action": "drag",
+      "chart": "fullchart1",
+      "from": [3, 2],
+      "to": [4, 3]
+    },
+    {
+      "time": 2,
+      "action": "drag",
+      "chart": "defaultchart1",
+      "from": [154, 12],
+      "to": [341, 23]
+    },
+    { "time": 3, "action": "to_default" },
+    { "time": 3, "action": "to_full", "size": "0.5" },
+    { "time": 3, "action": "to_dashboard" },
+    {
+      "time": 4,
+      "action": "chart_display",
+      "chart": "defaultchart1",
+      "check": true
+    },
+    {
+      "time": 5,
+      "action": "chart_display",
+      "chart": "fullchart1",
+      "check": false
+    },
+    { "time": 6, "action": "chart_type", "chart_type": "default_eng_radial" }
+  ]
+}

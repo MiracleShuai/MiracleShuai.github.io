@@ -2,6 +2,17 @@ function handleThresholdChange() {
   //   console.log($("#threshold")[0].value);
   const threshold = $("#threshold")[0].value;
   $("#thresholdtext").html("> " + threshold);
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "threshold",
+    chart: "defaultTrigger",
+    threshold: threshold,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleHidden() {
@@ -26,16 +37,26 @@ var radialInterval1,
   default2 = 0,
   default3 = 0,
   default4 = 0,
+  slides = [],
+  total_ppl = 0,
   threshold_value = {
     confusion: 0.5,
     engagement: 0.5,
     gaze: 0.5,
   },
-  chartData = {
+  trigger = {
     confusion: 0,
+    drowsiness: 0,
+    headnod: 0,
+    headshake: 0,
+    smile: 0,
+    speaking: 0,
+  },
+  current = {
     engagement: 0,
+    emotion: 0,
+    confusion: 0,
     gaze: 0,
-    // emotion: 0,
   },
   emojiData = {
     total_ppl: 0,
@@ -115,72 +136,72 @@ const chart_name = {
 //   },
 // };
 
-function getServerData(theme) {
-  // get data from backend
-  $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information_real",
-    type: "GET",
-    success: function (res) {
-      // console.log("getting data from backend");
-      var live_data = JSON.parse(res);
-      console.log(live_data);
+// function getServerData(theme) {
+//   // get data from backend
+//   $.ajax({
+//     url: "http://49.232.60.34:5000/get_class_information",
+//     type: "GET",
+//     success: function (res) {
+//       // console.log("getting data from backend");
+//       var live_data = JSON.parse(res);
+//       console.log(live_data);
 
-      // get emoji data
-      var emoji_data = {
-        confusion: 0,
-        smile: 0,
-        headnod: 0,
-        headshake: 0,
-        drowsiness: 0,
-        speaking: 0,
-      };
+//       // get emoji data
+//       var emoji_data = {
+//         confusion: 0,
+//         smile: 0,
+//         headnod: 0,
+//         headshake: 0,
+//         drowsiness: 0,
+//         speaking: 0,
+//       };
 
-      for (const [key, value] of Object.entries(emoji_data)) {
-        var total = 0;
-        emojiData.total_ppl = live_data.length;
-        live_data.forEach((d) => {
-          return (total += parseInt(d[key]));
-        });
-        // console.log(key, total);
-        emoji_data[key] = total;
-      }
-      // get max value
-      emojiData.max_value = Math.max(...Object.values(emoji_data));
-      // find corresponding key
-      emojiData.max_key = Object.keys(emoji_data).find(
-        (key) => emoji_data[key] == emojiData.max_value
-      );
+//       for (const [key, value] of Object.entries(emoji_data)) {
+//         var total = 0;
+//         emojiData.total_ppl = live_data.length;
+//         live_data.forEach((d) => {
+//           return (total += parseInt(d[key]));
+//         });
+//         // console.log(key, total);
+//         emoji_data[key] = total;
+//       }
+//       // get max value
+//       emojiData.max_value = Math.max(...Object.values(emoji_data));
+//       // find corresponding key
+//       emojiData.max_key = Object.keys(emoji_data).find(
+//         (key) => emoji_data[key] == emojiData.max_value
+//       );
 
-      // get chart data
-      Object.keys(chartData).forEach((name) => {
-        var norm_data = 0;
+//       // get chart data
+//       Object.keys(chartData).forEach((name) => {
+//         var norm_data = 0;
 
-        live_data.forEach((d) => {
-          // console.log(parseFloat(d[name]));
-          norm_data += parseFloat(d[name]);
-        });
-        norm_data /= live_data.length;
+//         live_data.forEach((d) => {
+//           // console.log(parseFloat(d[name]));
+//           norm_data += parseFloat(d[name]);
+//         });
+//         norm_data /= live_data.length;
 
-        // console.log(name, norm_data);
-        chartData[name] = norm_data;
-      });
-      console.log("getServerData chartData", chartData);
-      // console.log("normalized data:", norm_data);
+//         // console.log(name, norm_data);
+//         chartData[name] = norm_data;
+//       });
+//       console.log("getServerData chartData", chartData);
+//       // console.log("normalized data:", norm_data);
 
-      var name = "emotion";
-      var x = [],
-        y = [];
-      live_data.forEach((d) => {
-        x.push(parseFloat(d[name].split(" ")[0]));
-        y.push(parseFloat(d[name].split(" ")[1]));
-      });
-      console.log("emotion", emotion);
-      emotion = { x, y };
+//       var name = "emotion";
+//       var x = [],
+//         y = [];
+//       live_data.forEach((d) => {
+//         x.push(parseFloat(d[name].split(" ")[0]));
+//         y.push(parseFloat(d[name].split(" ")[1]));
+//       });
+//       console.log("emotion", emotion);
+//       emotion = { x, y };
 
-      checkAlert(theme);
-    },
-  });
-}
+//       checkAlert(theme);
+//     },
+//   });
+// }
 
 var borderIntervals = {
   confusion: null,
@@ -189,7 +210,8 @@ var borderIntervals = {
 };
 
 function checkAlert(theme) {
-  for (const [key, value] of Object.entries(chartData)) {
+  for (const [key, value] of Object.entries(current)) {
+    if (key === "emotion") continue;
     console.log("alert", alert);
 
     var triggerValue = threshold_value[key] - value;
@@ -393,12 +415,31 @@ function loadDefaultWindow() {
     }
 
     console.log("theme", theme);
-    setInterval(getServerData, 2000, theme);
+    setInterval(getServerData, 2000, false, true, theme);
 
     // make it sortable
     // $("#draggable").draggable();
     $("#sortable").sortable({
-      // placeholder: "ui-state-highlight",
+      change: function (event, ui) {
+        // console.log("event", event);
+        // console.log("id", ui.item[0].firstElementChild.id);
+        // console.log("original pos", ui.originalPosition);
+        // console.log("pos", ui.position);
+
+        var chartname = ui.item[0].firstElementChild.id; // defaultchart1
+        var { top, left } = ui.position;
+
+        var list = localStorage.getItem("user_behavior");
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push({
+          time: time(),
+          action: "drag",
+          chart: chartname,
+          to: [top, left],
+        });
+        list = JSON.stringify(list_json);
+        localStorage.setItem("user_behavior", list);
+      },
     });
     // $("#sortable").disableSelection();
 
@@ -651,7 +692,7 @@ function drawRadialChart(container, name, theme) {
   var radialInterval = setInterval(function () {
     if (RadialChart.series) {
       data = [];
-      data.push(chartData[correspond_name[name]] * 150);
+      data.push(current[correspond_name[name]] * 150);
       RadialChart.series[0].setData(data);
       // console.log("radial chart set data");
     }
@@ -796,18 +837,7 @@ function drawMotorChart(container, name, theme) {
 
     if (MotorChart.series) {
       point = MotorChart.series[0].points[0];
-      inc = (chartData[correspond_name[name]] - 0.5) * 100;
-      newVal = point.y + inc;
-
-      if (newVal < 0 || newVal > 200) {
-        newVal = point.y - inc;
-      }
-      // console.log("chart value", chartData[correspond_name[name]]);
-      // console.log("inc", inc);
-      // console.log("point", point);
-      // console.log("newVal", newVal);
-
-      point.update(newVal);
+      point.update(current[correspond_name[name]] * 200);
     }
   }, 1000);
 
@@ -902,7 +932,7 @@ function drawBarChart(container, name, theme, barInterval) {
   var barInterval = setInterval(function () {
     if (BarChart.series) {
       data = [];
-      data.push(chartData[correspond_name[name]] * 150);
+      data.push(current[correspond_name[name]] * 150);
       BarChart.series[0].setData(data);
       // console.log("bar chart set data");
     }
@@ -927,20 +957,47 @@ function handleDefaultChart1() {
   if (radialInterval1) clearInterval(radialInterval1);
   if (motorInterval1) clearInterval(motorInterval1);
 
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+
   if (default1 == 0) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart1",
+      type: "motor",
+    });
+
     motorInterval1 = drawMotorChart("defaultchart1", "Gaze", theme);
     document.cookie = "gazecharttype=Motor";
     $("#defaultchart1").css("height", 120);
   } else if (default1 == 1) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart1",
+      type: "radial",
+    });
+
     radialInterval1 = drawRadialChart("defaultchart1", "Gaze", theme);
     document.cookie = "gazecharttype=Radial";
     $("#defaultchart1").css("height", 140);
   } else {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart1",
+      type: "bar",
+    });
+
     barInterval1 = drawBarChart("defaultchart1", "Gaze", theme);
     document.cookie = "gazecharttype=Bar";
     $("#defaultchart1").css("height", 90);
   }
   default1 = (default1 + 1) % 3;
+
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleDefaultChart2() {
@@ -959,20 +1016,47 @@ function handleDefaultChart2() {
   if (radialInterval2) clearInterval(radialInterval2);
   if (motorInterval2) clearInterval(motorInterval2);
 
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+
   if (default2 == 0) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart2",
+      type: "motor",
+    });
+
     drawMotorChart("defaultchart2", "Confused", theme);
     document.cookie = "confusedcharttype=Motor";
     $("#defaultchart2").css("height", 120);
   } else if (default2 == 1) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart2",
+      type: "radial",
+    });
+
     drawRadialChart("defaultchart2", "Confused", theme);
     document.cookie = "confusedcharttype=Radial";
     $("#defaultchart2").css("height", 140);
   } else {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart2",
+      type: "bar",
+    });
+
     drawBarChart("defaultchart2", "Confused", theme);
     document.cookie = "confusedcharttype=Bar";
     $("#defaultchart2").css("height", 90);
   }
   default2 = (default2 + 1) % 3;
+
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleDefaultChart3() {
@@ -991,20 +1075,47 @@ function handleDefaultChart3() {
   if (radialInterval3) clearInterval(radialInterval3);
   if (motorInterval3) clearInterval(motorInterval3);
 
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+
   if (default3 == 0) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart3",
+      type: "motor",
+    });
+
     drawMotorChart("defaultchart3", "Engagement", theme);
     document.cookie = "engagecharttype=Motor";
     $("#defaultchart3").css("height", 120);
   } else if (default3 == 1) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart3",
+      type: "radial",
+    });
+
     drawRadialChart("defaultchart3", "Engagement", theme);
     document.cookie = "engagecharttype=Radial";
     $("#defaultchart3").css("height", 140);
   } else {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart3",
+      type: "bar",
+    });
+
     drawBarChart("defaultchart3", "Engagement", theme);
     document.cookie = "engagecharttype=Bar";
     $("#defaultchart3").css("height", 90);
   }
   default3 = (default3 + 1) % 3;
+
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 // function handleDefaultChart4() {

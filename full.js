@@ -1,3 +1,5 @@
+// const { GridStack } = require("gridstack");
+
 var fullinterval0,
   fullinterval1,
   fullinterval2,
@@ -18,6 +20,15 @@ var fullinterval0,
     confusion: 0,
     gaze: 0,
   },
+  emojiData = {
+    total_ppl: 0,
+    max_value: 0,
+    max_key: "",
+  },
+  emotion = {
+    x: [],
+    y: [],
+  },
   slide_range = [],
   current_heatpos = [],
   start_time,
@@ -26,127 +37,8 @@ var fullinterval0,
 // current stage info don't need to be stored in local storage, can be directly sent to chart
 // average of historical data can be calculated each time in drawRadarChart through local storage
 
-function getServerData() {
-  var x = new Date().getTime(),
-    eng = [],
-    heatpos = [],
-    total = {
-      engagement: 0,
-      emotion: 0,
-      confusion: 0,
-      gaze: 0,
-      drowsiness: 0,
-      headnod: 0,
-      headshake: 0,
-      smile: 0,
-      speaking: 0,
-    },
-    cur_emo_percentage = {
-      upperRight: 0,
-      lowerRight: 0,
-      lowerLeft: 0,
-      upperLeft: 0,
-      neutral: 0,
-    },
-    cur_emo_line = { valence: 0, arousal: 0 };
-
-  $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information_real",
-    type: "GET",
-    async: false,
-    success: function (res) {
-      console.log("getting data from backend");
-      data = JSON.parse(res);
-      console.log("data", data);
-      total_ppl = data.length;
-      for (const [key, value] of Object.entries(total)) {
-        if (key == "emotion") {
-          data.forEach((d) => {
-            total[key] += parseFloat(d[key].split(" ")[0]);
-            var x = parseFloat(d[key].split(" ")[0]),
-              y = parseFloat(d[key].split(" ")[1]);
-            if (x > 0.2 && y > 0.2) cur_emo_percentage.upperRight += 1;
-            else if (x > 0.2 && y < -0.2) cur_emo_percentage.lowerRight += 1;
-            else if (x < -0.2 && y < -0.2) cur_emo_percentage.lowerLeft += 1;
-            else if (x < -0.2 && y > 0.2) cur_emo_percentage.upperLeft += 1;
-            else cur_emo_percentage.neutral += 1;
-            cur_emo_line.valence += x;
-            cur_emo_line.arousal += y;
-            heatpos.push([x, y]);
-          });
-        } else if (key == "engagement") {
-          data.forEach((d) => {
-            eng.push(parseFloat(d[key]));
-            total[key] += parseFloat(d[key]);
-          });
-        } else {
-          data.forEach((d) => {
-            total[key] += parseFloat(d[key]);
-          });
-        }
-      }
-      // pass new heat pos info to add points on heatmap
-      current_heatpos = heatpos;
-
-      // get sum data for trigger
-      Object.keys(trigger).forEach((key) => (trigger[key] = total[key]));
-      console.log("trigger", trigger);
-
-      // get average data for radar overview
-      Object.keys(current).forEach((key) => {
-        current[key] = total[key] / data.length;
-        if (key == "emotion") current[key] = (current[key] + 1) / 2;
-      });
-      console.log("current", current); // for radar chart
-
-      // store in local storage
-      var store_categories = [
-        "engagement",
-        "emotion",
-        "confusion",
-        "gaze",
-        "eng_range",
-      ];
-      store_categories.forEach((d) => {
-        var list = localStorage.getItem(d);
-        list_json = list ? JSON.parse(list) : [];
-        if (d == "eng_range")
-          list_json.push([x, Math.min(...eng), Math.max(...eng)]);
-        else list_json.push([x, current[d]]);
-        list = JSON.stringify(list_json);
-        localStorage.setItem(d, list);
-      });
-      // store 5 categories for emotion percentage chart
-      Object.keys(cur_emo_percentage).forEach((key) => {
-        var list = localStorage.getItem(key);
-        list_json = list ? JSON.parse(list) : [];
-        list_json.push([x, cur_emo_percentage[key]]);
-        list = JSON.stringify(list_json);
-        localStorage.setItem(key, list);
-      });
-      // valence and arousal (non-normalized)
-      Object.keys(cur_emo_line).forEach((key) => {
-        var list = localStorage.getItem(key);
-        list_json = list ? JSON.parse(list) : [];
-        list_json.push([x, cur_emo_line[key] / data.length]);
-        list = JSON.stringify(list_json);
-        localStorage.setItem(key, list);
-      });
-
-      var slide_num = data[0]["slides_num"];
-      console.log(slide_num);
-      if (slides.length === 0) updateSlides(slide_num, x);
-      else if (slides[slides.length - 1][0] !== slide_num)
-        updateSlides(slide_num, x);
-      console.log("localstorage:", localStorage);
-    },
-  }).done(function () {
-    console.log("ajax done");
-  });
-}
-
-function updateSlides(slide_num, time) {
-  slides.push([slide_num, time]);
+function updateSlides(slides) {
+  // slides.push([slide_num, time]);
   const charts = [
     fullChart2,
     fullChart3,
@@ -167,7 +59,7 @@ function updateSlides(slide_num, time) {
     });
   }
   charts.forEach((chart) => {
-    console.log(chart);
+    // console.log(chart);
     if (Object.keys(chart).length)
       chart.update({
         xAxis: {
@@ -178,8 +70,7 @@ function updateSlides(slide_num, time) {
 }
 
 function loadFullWindow() {
-  setInterval(getServerData, 1000);
-  start_time = new Date().getTime();
+  setInterval(getServerData, 1000, true, false);
 
   let grid = GridStack.init({
     cellHeight: 100,
@@ -197,7 +88,21 @@ function loadFullWindow() {
   }, 1000);
 
   // manually resize chart to fit container
-  grid.on("resize", function (e, items) {
+  grid.on("resizestop", function (e, items) {
+    var chartname = "fullchart" + e.target.id[e.target.id.length - 1];
+    var w = e.target.attributes[2].value,
+      h = e.target.attributes[3].value;
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "resize",
+      chart: chartname,
+      size: [w, h],
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
+
     [...Array(11).keys()].forEach((d, i) => {
       $(`#fullchart${i}`).width($(`#fulldiv${i}`).width() - 40);
       $(`#fullchart${i}`).height($(`#fulldiv${i}`).height() - 40);
@@ -263,11 +168,30 @@ function loadFullWindow() {
         $("#fulldiv9").height() - 40
       );
 
-    if (Object.keys(fullChart10).length0)
+    if (Object.keys(fullChart10).length)
       fullChart10.setSize(
         $("#fulldiv10").width() - 40,
         $("#fulldiv10").height() - 40
       );
+  });
+
+  grid.on("dragstop", (e, items) => {
+    // console.log("e", e);
+    // console.log("items", items);
+    var chartname = "fullchart" + e.target.id[e.target.id.length - 1]; // fullchart1
+    var x = e.target.attributes[4].value,
+      y = e.target.attributes[5].value;
+
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "drag",
+      chart: chartname,
+      to: [x, y],
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
   });
 
   // get theme
@@ -398,7 +322,7 @@ function loadFullWindow() {
 }
 
 function handleUnloadFull() {
-  localStorage.clear();
+  // localStorage.clear();
   // clearInterval(updateFullInterval);
   // no need to clear the interval cause all the timers got cleaned when the browser closed
 }
@@ -606,7 +530,7 @@ function drawFullChart1() {
 
 function drawFullChart2() {
   // gaze area
-  var startTime = new Date().getTime();
+  // var startTime = new Date().getTime();
   fullChart2 = Highcharts.chart("fullchart2", {
     credits: false,
     chart: {
@@ -640,7 +564,7 @@ function drawFullChart2() {
     xAxis: {
       type: "datetime",
       // tickInterval: 10,
-      min: start_time,
+      // min: start_time,
       tickPixelInterval: 100,
       // tickPositioner: function () {
       //   date = new Date(this.dataMin);
@@ -764,7 +688,7 @@ function drawFullChart3() {
 
 function drawFullChart4() {
   // confusion area
-  var startTime = new Date().getTime();
+  // var startTime = new Date().getTime();
   fullChart4 = Highcharts.chart("fullchart4", {
     credits: false,
     chart: {
@@ -799,7 +723,7 @@ function drawFullChart4() {
     xAxis: {
       type: "datetime",
       // tickInterval: 10,
-      min: startTime,
+      min: start_time,
       tickPixelInterval: 100,
       // tickPositioner: function () {
       //   date = new Date(this.dataMin);
@@ -832,8 +756,8 @@ function drawFullChart4() {
 
 function drawFullChart5() {
   // confusion area neg
-  var startTime = new Date().getTime();
-  var threshold = 0.4;
+  // var startTime = new Date().getTime();
+  // var threshold = 0.4;
   fullChart5 = Highcharts.chart("fullchart5", {
     credits: false,
     chart: {
@@ -869,27 +793,27 @@ function drawFullChart5() {
       type: "datetime",
       // tickInterval: 10,
       tickPixelInterval: 100,
-      min: startTime,
+      min: start_time,
       // min: 1625842192120,
       plotBands: [
         {
-          from: startTime,
-          to: startTime + 10000,
+          from: start_time,
+          to: start_time + 10000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 20000,
-          to: startTime + 25000,
+          from: start_time + 20000,
+          to: start_time + 25000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 30000,
-          to: startTime + 40000,
+          from: start_time + 30000,
+          to: start_time + 40000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 50000,
-          to: startTime + 60000,
+          from: start_time + 50000,
+          to: start_time + 60000,
           color: "rgba(68, 170, 213, .2)",
         },
       ],
@@ -921,7 +845,7 @@ function drawFullChart5() {
 
 function drawFullChart6() {
   // eng area
-  var startTime = new Date().getTime();
+  // var startTime = new Date().getTime();
   fullChart6 = Highcharts.chart("fullchart6", {
     credits: false,
     chart: {
@@ -956,7 +880,7 @@ function drawFullChart6() {
     xAxis: {
       type: "datetime",
       // tickInterval: 10,
-      min: startTime,
+      min: start_time,
       tickPixelInterval: 100,
       // tickPositioner: function () {
       //   date = new Date(this.dataMin);
@@ -989,8 +913,8 @@ function drawFullChart6() {
 
 function drawFullChart7() {
   // eng area neg
-  var startTime = new Date().getTime();
-  var threshold = 0.4;
+  // var start_time = new Date().getTime();
+  // var threshold = 0.4;
   fullChart7 = Highcharts.chart("fullchart7", {
     credits: false,
     chart: {
@@ -1026,27 +950,27 @@ function drawFullChart7() {
       type: "datetime",
       // tickInterval: 10,
       tickPixelInterval: 100,
-      min: startTime,
+      min: start_time,
       // min: 1625842192120,
       plotBands: [
         {
-          from: startTime,
-          to: startTime + 10000,
+          from: start_time,
+          to: start_time + 10000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 20000,
-          to: startTime + 25000,
+          from: start_time + 20000,
+          to: start_time + 25000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 30000,
-          to: startTime + 40000,
+          from: start_time + 30000,
+          to: start_time + 40000,
           color: "rgba(68, 170, 213, .2)",
         },
         {
-          from: startTime + 50000,
-          to: startTime + 60000,
+          from: start_time + 50000,
+          to: start_time + 60000,
           color: "rgba(68, 170, 213, .2)",
         },
       ],
@@ -1079,7 +1003,7 @@ function drawFullChart7() {
 
 function drawFullChart8() {
   // eng area border
-  var startTime = new Date().getTime();
+  // var start_time = new Date().getTime();
   fullChart8 = Highcharts.chart("fullchart8", {
     credits: false,
     chart: {
@@ -1116,7 +1040,7 @@ function drawFullChart8() {
     xAxis: {
       type: "datetime",
       // tickInterval: 10,
-      min: startTime,
+      min: start_time,
       tickPixelInterval: 100,
       // min: 1625842192120,
     },
@@ -1161,7 +1085,7 @@ function drawFullChart8() {
 }
 
 function drawFullChart9() {
-  var startTime = new Date().getTime();
+  // var start_time = new Date().getTime();
   fullChart9 = Highcharts.chart("fullchart9", {
     credits: false,
     chart: {
@@ -1198,7 +1122,7 @@ function drawFullChart9() {
       // tickInterval: 10,
       format: "{value}",
       tickPixelInterval: 100,
-      // min: startTime,
+      // min: start_time,
       // min: 1625842192120,
     },
 
@@ -1285,7 +1209,7 @@ function drawFullChart9() {
 }
 
 function drawFullChart10() {
-  var startTime = new Date().getTime();
+  // var start_time = new Date().getTime();
   fullChart10 = Highcharts.chart("fullchart10", {
     credits: false,
     chart: {
@@ -1319,7 +1243,7 @@ function drawFullChart10() {
     xAxis: {
       type: "datetime",
       // tickInterval: 10,
-      min: startTime,
+      min: start_time,
       tickPixelInterval: 100,
       // min: 1625842192120,
     },
@@ -1471,6 +1395,17 @@ function handleDisplayFull(id) {
     grid = document.querySelector(".grid-stack").gridstack;
 
   if ($(`#fullcheck${id.toString()}`)[0].checked) {
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "display",
+      chart: `fullchart${id.toString()}`,
+      check: true,
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
+
     if (id == 11) {
       grid.addWidget(
         `<div class="grid-stack-item" id="grid-stack-item-${id.toString()}" gs-w="3" gs-h="3">
@@ -1555,6 +1490,17 @@ function handleDisplayFull(id) {
       }
     });
   } else {
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "display",
+      chart: `fullchart${id.toString()}`,
+      check: false,
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
+
     if (id == 11) {
       // hide card container
       $(`#fullchart${id.toString()}`).hide();
@@ -1584,6 +1530,17 @@ function handleFullThresholdChange(id) {
       },
     },
   });
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "threshold",
+    chart: `fullchart${id}`,
+    threshold: threshold,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 // function drawFullChart2() {

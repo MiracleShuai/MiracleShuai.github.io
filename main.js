@@ -1,5 +1,38 @@
+var trigger = {
+    confusion: 0,
+    drowsiness: 0,
+    headnod: 0,
+    headshake: 0,
+    smile: 0,
+    speaking: 0,
+  },
+  current = {
+    engagement: 0,
+    emotion: 0,
+    confusion: 0,
+    gaze: 0,
+  },
+  slides = [],
+  total_ppl = 0,
+  emojiData = {
+    total_ppl: 0,
+    max_value: 0,
+    max_key: "",
+  },
+  emotion = {
+    x: [],
+    y: [],
+  };
+
 function ToDefaultView() {
   console.log("to default view...");
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({ time: time(), action: "to_default" });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+
   // set default width as 1/10 screen width
   //   console.log(screen.width);
   //   var width = (1 / 10) * screen.width;
@@ -41,6 +74,12 @@ function ToFullView(rate) {
     document.cookie = "fullsize=" + rate;
   }
 
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({ time: time(), action: "to_full", size: rate });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+
   window.close();
   fullWindow = window.open("full.html", "", "width=100,height=100");
   console.log(screen.width);
@@ -50,6 +89,13 @@ function ToFullView(rate) {
 
 function ToDashboard() {
   console.log("to dashboard...");
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({ time: time(), action: "to_dashboard" });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+
   window.close();
   dashboard = window.open("index.html", "", "width=100,height=100");
   dashboard.resizeTo(screen.width, screen.height);
@@ -75,7 +121,201 @@ function handleWindowResize() {
   // $("#fullchart3").css("width", width);
 }
 
+function getServerData(update, alert, theme = null) {
+  var cur_time = new Date().getTime(),
+    eng = [],
+    heatpos = [],
+    total = {
+      engagement: 0,
+      emotion: 0,
+      confusion: 0,
+      gaze: 0,
+      drowsiness: 0,
+      headnod: 0,
+      headshake: 0,
+      smile: 0,
+      speaking: 0,
+    },
+    cur_emo_percentage = {
+      upperRight: 0,
+      lowerRight: 0,
+      lowerLeft: 0,
+      upperLeft: 0,
+      neutral: 0,
+    },
+    cur_emo_line = { valence: 0, arousal: 0 };
+
+  $.ajax({
+    url: "http://49.232.60.34:5000/get_class_information",
+    type: "GET",
+    async: false,
+    success: function (res) {
+      console.log("getting data from backend");
+      data = JSON.parse(res);
+      console.log("data", data);
+      total_ppl = data.length;
+
+      var list = localStorage.getItem("students_log");
+      students_log = list ? JSON.parse(list) : [];
+      var new_log = {
+        time: time(),
+        engagement: [],
+        confusion: [],
+        gaze: [],
+        valence: [],
+        arousal: [],
+        drowsiness: [],
+        headnod: [],
+        headshake: [],
+        smile: [],
+        speaking: [],
+      };
+
+      for (const [key, value] of Object.entries(total)) {
+        if (key == "emotion") {
+          data.forEach((d) => {
+            new_log["valence"].push(d[key].split(" ")[0]);
+            new_log["arousal"].push(d[key].split(" ")[1]);
+
+            total[key] += parseFloat(d[key].split(" ")[0]);
+            var x = parseFloat(d[key].split(" ")[0]),
+              y = parseFloat(d[key].split(" ")[1]);
+            if (x > 0.2 && y > 0.2) cur_emo_percentage.upperRight += 1;
+            else if (x > 0.2 && y < -0.2) cur_emo_percentage.lowerRight += 1;
+            else if (x < -0.2 && y < -0.2) cur_emo_percentage.lowerLeft += 1;
+            else if (x < -0.2 && y > 0.2) cur_emo_percentage.upperLeft += 1;
+            else cur_emo_percentage.neutral += 1;
+            cur_emo_line.valence += x;
+            cur_emo_line.arousal += y;
+            heatpos.push([x, y]);
+          });
+        } else if (key == "engagement") {
+          data.forEach((d) => {
+            eng.push(parseFloat(d[key]));
+            new_log[key].push(d[key]);
+            total[key] += parseFloat(d[key]);
+          });
+        } else {
+          data.forEach((d) => {
+            total[key] += parseFloat(d[key]);
+            if (Object.keys(new_log).indexOf(key) >= 0)
+              new_log[key].push(d[key]);
+          });
+        }
+      }
+      // pass new heat pos info to add points on heatmap
+      current_heatpos = heatpos;
+
+      // get sum data for trigger
+      Object.keys(trigger).forEach((key) => (trigger[key] = total[key]));
+      console.log("trigger", trigger);
+      // for default view
+      emojiData.total_ppl = total_ppl;
+      // get max value
+      emojiData.max_value = Math.max(...Object.values(trigger));
+      // find corresponding key
+      emojiData.max_key = Object.keys(trigger).find(
+        (key) => trigger[key] == emojiData.max_value
+      );
+
+      // get average data for radar overview
+      Object.keys(current).forEach((key) => {
+        if (key == "emotion") {
+          current[key] = (current[key] + 1) / 2;
+        } else {
+          current[key] = total[key] / data.length;
+        }
+      });
+      console.log("current", current); // for radar chart
+      // store data for default view
+      chartData = {
+        confusion: current.confusion,
+        engagement: current.engagement,
+        gaze: current.gaze,
+      };
+
+      // store in local storage
+      var store_categories = [
+        "engagement",
+        "emotion",
+        "confusion",
+        "gaze",
+        "eng_range",
+      ];
+      store_categories.forEach((d) => {
+        var list = localStorage.getItem(d);
+        list_json = list ? JSON.parse(list) : [];
+        if (d == "eng_range")
+          list_json.push([cur_time, Math.min(...eng), Math.max(...eng)]);
+        else list_json.push([cur_time, current[d]]);
+        list = JSON.stringify(list_json);
+        localStorage.setItem(d, list);
+      });
+      // store 5 categories for emotion percentage chart
+      Object.keys(cur_emo_percentage).forEach((key) => {
+        var list = localStorage.getItem(key);
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push([cur_time, cur_emo_percentage[key]]);
+        list = JSON.stringify(list_json);
+        localStorage.setItem(key, list);
+      });
+      // valence and arousal (non-normalized)
+      Object.keys(cur_emo_line).forEach((key) => {
+        var list = localStorage.getItem(key);
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push([cur_time, cur_emo_line[key] / data.length]);
+        list = JSON.stringify(list_json);
+        localStorage.setItem(key, list);
+      });
+
+      var slide_num = data[0]["slides_num"];
+      console.log(slide_num);
+
+      var list = localStorage.getItem("slides");
+      slides = list ? JSON.parse(list) : [];
+      if (slides.length === 0 || slides[slides.length - 1][0] !== slide_num)
+        slides.push([slide_num, cur_time]);
+      list = JSON.stringify(slides);
+      localStorage.setItem("slides", list);
+
+      // calculate average for log
+      for (const [key, value] of Object.entries(new_log)) {
+        if (key !== "time") {
+          let sum = value.reduce(function (a, b) {
+            return parseFloat(a) + parseFloat(b);
+          }, 0);
+          new_log[key].push(sum / value.length);
+        }
+      }
+      students_log.push(new_log);
+      localStorage.setItem("students_log", JSON.stringify(students_log));
+
+      // update slide for full view
+      if (update) updateSlides(slides);
+
+      // store current data for default view
+      var name = "emotion";
+      var x = [],
+        y = [];
+      data.forEach((d) => {
+        x.push(parseFloat(d[name].split(" ")[0]));
+        y.push(parseFloat(d[name].split(" ")[1]));
+      });
+      console.log("emotion", emotion);
+      emotion = { x, y };
+
+      if (alert) checkAlert(theme);
+
+      console.log("localstorage:", localStorage);
+    },
+  }).done(function () {
+    console.log("ajax done");
+  });
+}
+
 function loadWindow() {
+  setInterval(getServerData, 1000, false, false);
+
   // update default chart type status
   var cookieList = document.cookie.split("; ");
   console.log("on load window cookie", cookieList);
@@ -243,7 +483,20 @@ function loadWindow() {
     .on("colorpickerChange colorpickerCreate", function (e) {
       var color = e.color.string().split("(")[1].split(")")[0];
       console.log(color);
-      if ($("#eng-cp-radio")[0].checked) document.cookie = "engcolor=" + color;
+      if ($("#eng-cp-radio")[0].checked) {
+        document.cookie = "engcolor=" + color;
+
+        var list = localStorage.getItem("user_behavior");
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push({
+          time: time(),
+          action: "chart_color",
+          chart: "defaultchart3",
+          color: `rgb(${color})`,
+        });
+        list = JSON.stringify(list_json);
+        localStorage.setItem("user_behavior", list);
+      }
     });
 
   var confcolor,
@@ -260,8 +513,20 @@ function loadWindow() {
     .on("colorpickerChange colorpickerCreate", function (e) {
       var color = e.color.string().split("(")[1].split(")")[0];
       console.log(color);
-      if ($("#conf-cp-radio")[0].checked)
+      if ($("#conf-cp-radio")[0].checked) {
         document.cookie = "confcolor=" + color;
+
+        var list = localStorage.getItem("user_behavior");
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push({
+          time: time(),
+          action: "chart_color",
+          chart: "defaultchart2",
+          color: `rgb(${color})`,
+        });
+        list = JSON.stringify(list_json);
+        localStorage.setItem("user_behavior", list);
+      }
     });
 
   var gazecolor,
@@ -278,8 +543,20 @@ function loadWindow() {
     .on("colorpickerChange colorpickerCreate", function (e) {
       var color = e.color.string().split("(")[1].split(")")[0];
       console.log(color);
-      if ($("#gaze-cp-radio")[0].checked)
+      if ($("#gaze-cp-radio")[0].checked) {
         document.cookie = "gazecolor=" + color;
+
+        var list = localStorage.getItem("user_behavior");
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push({
+          time: time(),
+          action: "chart_color",
+          chart: "defaultchart1",
+          color: `rgb(${color})`,
+        });
+        list = JSON.stringify(list_json);
+        localStorage.setItem("user_behavior", list);
+      }
     });
 
   // initial store in cookies when first load
@@ -332,13 +609,51 @@ function handleRadioChange() {
   document.cookie = "full-emotion=" + fullemotion;
 
   console.log(document.cookie);
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "initial_chart_type",
+    chart_type: {
+      default_gaze: gazeChartType,
+      default_confused: confusedChartType,
+      default_engage: engageChartType,
+      full_gaze: fullgaze,
+      full_confused: fullconfused,
+      full_engage: fulleng,
+      full_emotion: fullemotion,
+    },
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleDisplay(checkButton, chartContainer) {
   if ($("#" + checkButton)[0].checked) {
     $("#" + chartContainer).show();
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "display",
+      chart: chartContainer,
+      check: true,
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
   } else {
     $("#" + chartContainer).hide();
+    var list = localStorage.getItem("user_behavior");
+    list_json = list ? JSON.parse(list) : [];
+    list_json.push({
+      time: time(),
+      action: "display",
+      chart: chartContainer,
+      check: false,
+    });
+    list = JSON.stringify(list_json);
+    localStorage.setItem("user_behavior", list);
   }
 }
 
@@ -346,6 +661,16 @@ function handleThemeChange() {
   themeid = $("input[name='themeradio']:checked").val();
   console.log("themeradio:", $("input[name='themeradio']:checked"));
   document.cookie = "themeid=" + themeid;
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: new Date().getTime(),
+    action: "theme",
+    theme: themeid,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleChartThresholdChange(id) {
@@ -353,6 +678,17 @@ function handleChartThresholdChange(id) {
   if (id == "engthresh") $(`#${id}text`).html("> " + threshold + "%");
   else $(`#${id}text`).html("< " + threshold + "%");
   document.cookie = id + "=" + threshold;
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "threshold",
+    chart: `defaultchart${id === "conthresh" ? 2 : id === "engthresh" ? 3 : 1}`,
+    threshold: threshold,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
 }
 
 function handleAlertChange() {
@@ -362,10 +698,66 @@ function handleAlertChange() {
   document.cookie = "alertBorder=" + (alertType === "no" ? 0 : 1);
   document.cookie = "alertOnce=" + (alertType === "once" ? 1 : 0);
   document.cookie = "alertSound=" + (sound ? 1 : 0);
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "alert_type",
+    border: alertType,
+    sound: sound,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+}
+
+function time(time = +new Date()) {
+  var date = new Date(time + 8 * 3600 * 1000);
+  return date.toJSON().substr(0, 19).split("T")[1];
 }
 
 function handleColorpickerRadio() {
   if (!$("#eng-cp-radio")[0].checked) document.cookie = "engcolor=";
   if (!$("#conf-cp-radio")[0].checked) document.cookie = "confcolor=";
   if (!$("#gaze-cp-radio")[0].checked) document.cookie = "gazecolor=";
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "chart_color_customize",
+    defaultchart3: $("#eng-cp-radio")[0].checked,
+    defaultchart2: $("#conf-cp-radio")[0].checked,
+    defaultchart1: $("#gaze-cp-radio")[0].checked,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+}
+
+function handleStartRecord() {
+  localStorage.clear();
+}
+
+function handleFinishRecord() {
+  ["user_behavior", "students_log"].forEach((name) => {
+    const filename = name + ".txt";
+    const str = localStorage.getItem(name);
+    console.log(localStorage.getItem(name));
+
+    let element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(str)
+    );
+    element.setAttribute("download", filename);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+  });
+
+  localStorage.clear();
 }
