@@ -146,7 +146,7 @@ function getServerData(update, alert, theme = null) {
     cur_emo_line = { valence: 0, arousal: 0 };
 
   $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information",
+    url: "https://shuaima.cc:5000/get_class_information_real",
     type: "GET",
     async: false,
     success: function (res) {
