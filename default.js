@@ -118,7 +118,7 @@ const chart_name = {
 function getServerData(theme) {
   // get data from backend
   $.ajax({
-    url: "http://49.232.60.34:5000/get_class_information_real",
+    url: "https://shuaima.cc:5000/get_class_information_real",
     type: "GET",
     success: function (res) {
       // console.log("getting data from backend");

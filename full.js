@@ -51,7 +51,7 @@ function getServerData() {
     cur_emo_line = { valence: 0, arousal: 0 };
 
   $.ajax({
-    url: "http://49.232.60.34:5000/get_class_information_real",
+    url: "https://shuaima.cc:5000/get_class_information_real",
     type: "GET",
     async: false,
     success: function (res) {
