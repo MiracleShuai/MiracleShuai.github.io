@@ -122,7 +122,7 @@ function handleWindowResize() {
 }
 
 function getServerData(update, alert, theme = null) {
-  var cur_time = new Date().getTime(),
+  var cur_time = new Date().getTime() + 8 * 3600 * 1000,
     eng = [],
     heatpos = [],
     total = {
@@ -148,7 +148,7 @@ function getServerData(update, alert, theme = null) {
   $.ajax({
     url: "https://shuaima.cc:5000/get_class_information_real",
     type: "GET",
-    async: false,
+    // async: false,
     success: function (res) {
       console.log("getting data from backend");
       data = JSON.parse(res);
@@ -264,6 +264,7 @@ function getServerData(update, alert, theme = null) {
         var list = localStorage.getItem(key);
         list_json = list ? JSON.parse(list) : [];
         list_json.push([cur_time, cur_emo_line[key] / data.length]);
+        new_log[key] = cur_emo_line[key] / data.length;
         list = JSON.stringify(list_json);
         localStorage.setItem(key, list);
       });
@@ -280,11 +281,12 @@ function getServerData(update, alert, theme = null) {
 
       // calculate average for log
       for (const [key, value] of Object.entries(new_log)) {
-        if (key !== "time") {
+        if (key !== "time" && key !== "valence" && key !== "arousal") {
           let sum = value.reduce(function (a, b) {
             return parseFloat(a) + parseFloat(b);
           }, 0);
           new_log[key].push(sum / value.length);
+          new_log[key] = total[key] / data.length;
         }
       }
       students_log.push(new_log);
@@ -314,7 +316,7 @@ function getServerData(update, alert, theme = null) {
 }
 
 function loadWindow() {
-  setInterval(getServerData, 1000, false, false);
+  setInterval(getServerData, 5000, false, false);
 
   // update default chart type status
   var cookieList = document.cookie.split("; ");
@@ -583,6 +585,26 @@ function loadWindow() {
   if (!themeid) {
     themeid = $("input[name='themeradio']:checked").val();
     document.cookie = "themeid=" + themeid;
+  }
+
+  if (!fullgazeType) {
+    fullgazeType = $("input[name='full-gaze']:checked").val();
+    document.cookie = "full-gaze=" + fullgazeType;
+  }
+
+  if (!fullconfusedType) {
+    fullconfusedType = $("input[name='full-confused']:checked").val();
+    document.cookie = "full-confused=" + fullconfusedType;
+  }
+
+  if (!fullengType) {
+    fullengType = $("input[name='full-eng']:checked").val();
+    document.cookie = "full-eng=" + fullengType;
+  }
+
+  if (!fullemotionType) {
+    fullemotionType = $("input[name='full-emotion']:checked").val();
+    document.cookie = "full-emotion=" + fullemotionType;
   }
 }
 

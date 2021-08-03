@@ -15,6 +15,22 @@ function handleThresholdChange() {
   localStorage.setItem("user_behavior", list);
 }
 
+function handleEmotionThreshChange() {
+  const emotionThresh = $("#emotionThresh")[0].value;
+  $("#emotionThreshtext").html("> " + emotionThresh);
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+  list_json.push({
+    time: time(),
+    action: "threshold",
+    chart: "defaultEmotion",
+    threshold: emotionThresh,
+  });
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+}
+
 function handleHidden() {
   console.log($("#chart_type").is(":visible"));
   if ($("#chart_type").is(":visible")) $("#hidden_space").hide();
@@ -523,6 +539,7 @@ function loadDefaultWindow() {
   // trigger
   setInterval(function () {
     $("#threshold").attr("max", emojiData.total_ppl);
+    $("#emotionThresh").attr("max", emojiData.total_ppl);
     const threshold = $("#threshold")[0].value;
     if (emojiData.max_value > threshold) {
       // change the height of the card

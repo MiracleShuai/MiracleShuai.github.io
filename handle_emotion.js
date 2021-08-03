@@ -1,3 +1,4 @@
+//document.body.appendChild(real_canvas);
 function makeHighRes(canvas) {
   var ctx = canvas.getContext("2d");
   // Get the device pixel ratio, falling back to 1.
@@ -24,10 +25,8 @@ function makeHighRes(canvas) {
   ctx.scale(dpr, dpr);
   return ctx;
 }
-
-function draw(a, b, cw, ch, threshold) {
-  try {
-    var list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+function draw_overlapping_area(a, b, cw, ch, threshold) {
+  var list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     var ratio = 100 / 840;
     var min = 0;
     if (cw > ch) {
@@ -80,7 +79,7 @@ function draw(a, b, cw, ch, threshold) {
         list[order]++;
       }
     }
-
+    // alert(list);
     for (var i_0 = 0; i_0 < list.length; i_0++) {
       document.getElementById("data_test").innerText += "" + list[i_0] + "\n";
     }
@@ -122,21 +121,33 @@ function draw(a, b, cw, ch, threshold) {
         ctx.fill();
       }
     }
-
-    var img_1 = new Image();
-
-    img_1.onload = function () {
-      ctx.drawImage(this, 0, 0, 90, 90);
-    };
-    img_1.src = "emotionwheel_background/emotionwheel.png";
-
-    //img_1.src="emotionwheel_with_neutral.png";
-  } catch (e) {
-    alert(e.message);
-  }
 }
+// function draw(a, b, cw, ch, threshold) {
+//   try {
+    
+     
+//     var img_1 = new Image();
+//     draw_overlapping_area_para_a=a;
+//     draw_overlapping_area_para_b=b;
+//     draw_overlapping_area_para_cw=cw;
+//     draw_overlapping_area_para_ch=ch;
+//     draw_overlapping_area_para_threshold=threshold;
+    
+//     img_1.onload = function () {
+//       //alert(threshold);
+//       draw_overlapping_area(a, b, cw, ch, threshold);
+//       ctx.globalCompositeOperation = "source-in";
+//       ctx.drawImage(this, 0, 0, 90, 90);
+//     };
+//     img_1.src = "emotionwheel_background/emotionwheel.png";
 
-// var new_win=window.open("test.html");var p=new_win.document.getElementById("data_test");
+//     //img_1.src="emotionwheel_with_neutral.png";
+//   } catch (e) {
+//     alert(e.message);
+//   }
+// }
+
+//var new_win=window.open();
 // setInterval(function () {
 //     p.innerHTML="Engage:"+count(engagements)+"\nConfuse"+count(confusions)+"\ngaze"+count(gazes);
 // },1000)
@@ -146,11 +157,14 @@ function create_emotion_wheel(threshold) {
   var temp_x = emotion.x;
   var temp_y = emotion.y;
   var if_euqal = 1;
-  // for (var m = 0; m < 100; m++) {
+  // alert(threshold);
+  // for (var m = 0; m < 10; m++) {
   //     temp_x[m] = Math.random() * 2 - 1;
   //     temp_y[m] = Math.random() * 2 - 1;
 
   // }
+  //alert(""+emotion.x+"\n"+emotion.y+"\n")
+
   list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   temp_list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   var true_list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -222,21 +236,37 @@ function create_emotion_wheel(threshold) {
     // canvas=document.createElement("canvas");
     // var real_canvas=document.getElementById("emotion_wheel");
     canvas = document.getElementById("emotion_wheel");
-    var real_canvas = document.createElement("canvas");
+    
+    real_canvas = document.createElement("canvas");
 
     //var emotion_container=document.getElementById("emotion_container");
     //emotion_container.insertBefore(canvas,real_canvas);
-
-    canvas.width = real_canvas.width;
-    canvas.height = real_canvas.height;
-    canvas.style.width = real_canvas.style.width;
-    canvas.style.height = real_canvas.style.height;
-    ctx = makeHighRes(canvas);
-    real_ctx = makeHighRes(real_canvas);
-    draw(temp_x, temp_y, 90, 90, threshold);
-
-    real_ctx.drawImage(canvas, 0, 0);
-    ctx.globalCompositeOperation = "source-in";
+    //front_ctx = makeHighRes(canvas);
+    front_ctx=canvas.getContext("2d");    
+    front_ctx.clearRect(0,0,100,100);
+    real_canvas.width = 90;
+    real_canvas.height = 90;
+    //real_canvas.style.width = canvas.style.width;
+    //real_canvas.style.height = canvas.style.height;
+    ctx = real_canvas.getContext("2d");
+    
+    draw_overlapping_area(temp_x, temp_y, 90, 90, threshold);
+    var img_1=new Image();
+    ctx.globalCompositeOperation="source-in";
+    //alert(img_1)
+    img_1.onload=function () {
+      //alert("in");
+      try{
+        
+      //front_ctx.clearRect(0,0,100,100);
+        ctx.drawImage(this,0,0);
+     }catch(e){alert(e.message);}
+       front_ctx.drawImage(real_canvas, 0, 0);
+    }
+    img_1.src='emotionwheel_background/emotionwheel_small.png';
+    
+    
+    
   } catch (e) {
     alert(e.message);
   }
