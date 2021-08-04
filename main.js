@@ -146,7 +146,7 @@ function getServerData(update, alert, theme = null) {
     cur_emo_line = { valence: 0, arousal: 0 };
 
   $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information_real",
+    url: "https://shuaima.cc:5000/get_class_information",
     type: "GET",
     // async: false,
     success: function (res) {
@@ -697,7 +697,7 @@ function handleThemeChange() {
 
 function handleChartThresholdChange(id) {
   const threshold = $("#" + id)[0].value;
-  if (id == "engthresh") $(`#${id}text`).html("> " + threshold + "%");
+  if (id == "conthresh") $(`#${id}text`).html("> " + threshold + "%");
   else $(`#${id}text`).html("< " + threshold + "%");
   document.cookie = id + "=" + threshold;
 
