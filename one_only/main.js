@@ -269,7 +269,12 @@ function getServerData(update, alert, theme = null) {
       });
 
       var slide_num = data[0]["slides_num"];
-      console.log(slide_num);
+      // console.log(slide_num);
+      var list = localStorage.getItem("slides_num_time");
+      slides_num_time = list ? JSON.parse(list) : {};
+      slides_num_time[cur_time] = slide_num;
+      list = JSON.stringify(slides_num_time);
+      localStorage.setItem("slides_num_time", list);
 
       var list = localStorage.getItem("slides");
       slides = list ? JSON.parse(list) : [];

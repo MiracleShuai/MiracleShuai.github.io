@@ -26,6 +26,7 @@ function makeHighRes(canvas) {
   return ctx;
 }
 function draw_overlapping_area(a, b, cw, ch, threshold) {
+  
   var list = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     var ratio = 100 / 840;
     var min = 0;
@@ -83,7 +84,7 @@ function draw_overlapping_area(a, b, cw, ch, threshold) {
     for (var i_0 = 0; i_0 < list.length; i_0++) {
       document.getElementById("data_test").innerText += "" + list[i_0] + "\n";
     }
-
+    
     for (var i_1 = 0; i_1 < list.length; i_1++) {
       if (i_1 < 8 && list[i_1] >= threshold) {
         var start_angle = 2 * Math.PI - (Math.PI * (i_1 + 1)) / 4;
@@ -151,9 +152,16 @@ function draw_overlapping_area(a, b, cw, ch, threshold) {
 // setInterval(function () {
 //     p.innerHTML="Engage:"+count(engagements)+"\nConfuse"+count(confusions)+"\ngaze"+count(gazes);
 // },1000)
-
-function create_emotion_wheel(threshold) {
+function handleEmotionThreshChange() {
+  var threshold_value_emotion=document.getElementById("emotionThresh").value;
+  var emotion_bar_index=document.getElementById("emotionThreshtext");
+  emotion_bar_index.innerHTML='>=' + threshold_value_emotion;
+}
+function create_emotion_wheel() {
   console.log("emotion wheel", emotion);
+  
+  var threshold=document.getElementById("emotionThresh").value;
+  //alert(threshold);
   var temp_x = emotion.x;
   var temp_y = emotion.y;
   var if_euqal = 1;

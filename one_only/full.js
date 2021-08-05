@@ -33,7 +33,9 @@ var fullinterval0,
   current_heatpos = [],
   start_time,
   slides = [],
-  total_ppl = 0;
+  total_ppl = 0,
+  slides_img_path = {},
+  slides_num_time = {};
 // current stage info don't need to be stored in local storage, can be directly sent to chart
 // average of historical data can be calculated each time in drawRadarChart through local storage
 
@@ -61,6 +63,18 @@ function updateSlides(slides) {
 
 function loadFullWindow() {
   setInterval(getServerData, 1000, true, false);
+
+  // get slides img path
+  $.ajax({
+    url: "https://shuaima.cc:5000/get_slides_imgs",
+    type: "GET",
+    // async: false,
+    success: function (res) {
+      console.log("getting slides img path from backend");
+      slides_img_path = JSON.parse(res);
+      console.log("slides_img_path", slides_img_path);
+    },
+  });
 
   // let grid = GridStack.init({
   //   cellHeight: 100,
@@ -209,9 +223,15 @@ function drawFullChart7() {
       valueDecimals: 2,
       useHTML: true,
       formatter: function () {
+        var list = localStorage.getItem("slides_num_time");
+        slides_num_time = list ? JSON.parse(list) : {};
+        let img_path = slides_img_path[slides_num_time[this.point.category]];
+        console.log("slides_num_time", slides_num_time);
+        console.log("this.point.category", this.point.category);
         return `<div style="min-height: 120px;">
-        <img src="https://img.webmd.com/dtmcms/live/webmd/consumer_assets/site_images/article_thumbnails/other/dog_cool_summer_slideshow/1800x1200_dog_cool_summer_other.jpg" width="150"/>
-        <br />► ${this.series.name}: ${this.point.y.toFixed(2)}<br /></div>`;
+        <img src=${img_path} width="150"/>
+        <br />► ${this.series.name}: ${this.point.y.toFixed(2)}<br />
+        ► slide: ${slides_num_time[this.point.category]}</div>`;
       },
     },
 

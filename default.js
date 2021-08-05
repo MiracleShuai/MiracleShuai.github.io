@@ -295,7 +295,7 @@ function checkAlert(theme) {
 }
 
 function loadDefaultWindow() {
-  setInterval(create_emotion_wheel, 1000, 1);
+  setInterval(create_emotion_wheel, 1000);
   // get the chart type
   var cookieList = document.cookie.split("; ");
   console.log("cookie list:", cookieList);
