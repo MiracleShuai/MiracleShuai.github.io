@@ -12,6 +12,11 @@ var trigger = {
     confusion: 0,
     gaze: 0,
   },
+  emotionChartData = {
+    negative: 0,
+    neutral: 0,
+    positive: 0,
+  },
   slides = [],
   total_ppl = 0,
   emojiData = {
@@ -122,6 +127,49 @@ function handleWindowResize() {
 }
 
 function getServerData(update, alert, theme = null) {
+  /*
+  valence = -0.2;
+  arousal = -0.21;
+
+
+  if (valence !== 0) {
+    if (valence < 0) {
+      angle = Math.atan(arousal / valence) + Math.PI;
+    } else {
+      if (arousal > 0) {
+        angle = Math.atan(arousal / valence);
+      } else {
+        angle = Math.atan(arousal / valence) + Math.PI * 2;
+      }
+    }
+    if (Math.abs(valence) >= Math.abs(arousal)) {
+      index = Math.abs(Math.cos(angle));
+    } else {
+      index = Math.abs(Math.sin(angle));
+    }
+  } else if (arousal >= 0) {
+    angle = Math.PI / 2;
+  } else {
+    angle = (Math.PI * 3) / 2;
+  }
+
+  if (
+    // Math.abs(a[i] * index) < 1 / 3 && Math.abs(b[i] * index) < 1 / 3 (if the point is in the middle with a radius of 1/3)
+    Math.abs(valence)<=0.1
+    ) {
+    order = 4;
+  } else {
+    //var order = Math.floor(angle / (Math.PI / 2));
+    var order = Math.floor(angle / (Math.PI / 4));
+
+  }
+
+
+
+  console.log(angle);
+  console.log(order);
+  */
+
   var cur_time = new Date().getTime() + 8 * 3600 * 1000,
     eng = [],
     heatpos = [],
@@ -144,9 +192,10 @@ function getServerData(update, alert, theme = null) {
       neutral: 0,
     },
     cur_emo_line = { valence: 0, arousal: 0 };
+  emotionChartData = { negative: 1, positive: 1, neutral: 1 };
 
   $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information_real",
+    url: "https://shuaima.cc:5000/get_class_information",
     type: "GET",
     // async: false,
     success: function (res) {
@@ -180,11 +229,22 @@ function getServerData(update, alert, theme = null) {
             total[key] += parseFloat(d[key].split(" ")[0]);
             var x = parseFloat(d[key].split(" ")[0]),
               y = parseFloat(d[key].split(" ")[1]);
-            if (x > 0.2 && y > 0.2) cur_emo_percentage.upperRight += 1;
-            else if (x > 0.2 && y < -0.2) cur_emo_percentage.lowerRight += 1;
-            else if (x < -0.2 && y < -0.2) cur_emo_percentage.lowerLeft += 1;
-            else if (x < -0.2 && y > 0.2) cur_emo_percentage.upperLeft += 1;
-            else cur_emo_percentage.neutral += 1;
+            if (x > 0.1 && y > 0.1) {
+              cur_emo_percentage.upperRight += 1;
+              emotionChartData.positive += 1;
+            } else if (x > 0.1 && y < -0.1) {
+              cur_emo_percentage.lowerRight += 1;
+              emotionChartData.positive += 1;
+            } else if (x < -0.1 && y < -0.1) {
+              cur_emo_percentage.lowerLeft += 1;
+              emotionChartData.negative += 1;
+            } else if (x < -0.1 && y > 0.1) {
+              cur_emo_percentage.upperLeft += 1;
+              emotionChartData.negative += 1;
+            } else {
+              cur_emo_percentage.neutral += 1;
+              emotionChartData.neutral += 1;
+            }
             cur_emo_line.valence += x;
             cur_emo_line.arousal += y;
             heatpos.push([x, y]);
@@ -360,13 +420,16 @@ function loadWindow() {
     true
   );
 
-  var emoChartType,
-    emoChartName = "emocharttype";
+  var emotionChartType,
+    emotionChartName = "emotioncharttype";
   cookieList.forEach((val) => {
-    if (val.indexOf(emoChartName) === 0)
-      emoChartType = val.substring(emoChartName.length + 1);
+    if (val.indexOf(emotionChartName) === 0)
+      emotionChartType = val.substring(emotionChartName.length + 1);
   });
-  $("input[name='emoradio'][value=" + emoChartType + "]").prop("checked", true);
+  $("input[name='emotionradio'][value=" + emotionChartType + "]").prop(
+    "checked",
+    true
+  );
 
   // update theme status
   var themeid,
@@ -566,6 +629,36 @@ function loadWindow() {
       }
     });
 
+  var emocolor,
+    emocolorName = "emocolor";
+  cookieList.forEach((val) => {
+    if (val.indexOf(emocolorName) === 0)
+      emocolor = val.substring(emocolorName.length + 1);
+  });
+  if (emocolor) {
+    $("input#emo-cp-radio").prop("checked", true);
+  }
+  $("#emo-cp")
+    .colorpicker({ format: "rgb", color: `rgb(${emocolor})` })
+    .on("colorpickerChange colorpickerCreate", function (e) {
+      var color = e.color.string().split("(")[1].split(")")[0];
+      console.log(color);
+      if ($("#emo-cp-radio")[0].checked) {
+        document.cookie = "emocolor=" + color;
+
+        var list = localStorage.getItem("user_behavior");
+        list_json = list ? JSON.parse(list) : [];
+        list_json.push({
+          time: time(),
+          action: "chart_color",
+          chart: "defaultchart4",
+          color: `rgb(${color})`,
+        });
+        list = JSON.stringify(list_json);
+        localStorage.setItem("user_behavior", list);
+      }
+    });
+
   // initial store in cookies when first load
   if (!gazeChartType) {
     gazeChartType = $("input[name='gazeradio']:checked").val();
@@ -582,14 +675,18 @@ function loadWindow() {
     document.cookie = "engagecharttype=" + engageChartType;
   }
 
-  if (!emoChartType) {
-    emoChartType = $("input[name='emoradio']:checked").val();
-    document.cookie = "emocharttype=" + emoChartType;
+  if (!emotionChartType) {
+    emotionChartType = $("input[name='emotionradio']:checked").val();
+    document.cookie = "emotioncharttype=" + emotionChartType;
   }
 
   if (!themeid) {
     themeid = $("input[name='themeradio']:checked").val();
     document.cookie = "themeid=" + themeid;
+    console.log(
+      "themeid",
+      (themeid = $("input[name='themeradio']:checked").val())
+    );
   }
 
   if (!fullgazeType) {
@@ -623,6 +720,9 @@ function handleRadioChange() {
   engageChartType = $("input[name='engageradio']:checked").val();
   document.cookie = "engagecharttype=" + engageChartType;
 
+  emotionChartType = $("input[name='emotionradio']:checked").val();
+  document.cookie = "emotioncharttype=" + emotionChartType;
+
   fullgaze = $("input[name='full-gaze']:checked").val();
   document.cookie = "full-gaze=" + fullgaze;
 
@@ -646,6 +746,7 @@ function handleRadioChange() {
       default_gaze: gazeChartType,
       default_confused: confusedChartType,
       default_engage: engageChartType,
+      default_emotion: emotionChartType,
       full_gaze: fullgaze,
       full_confused: fullconfused,
       full_engage: fulleng,
@@ -747,6 +848,7 @@ function handleColorpickerRadio() {
   if (!$("#eng-cp-radio")[0].checked) document.cookie = "engcolor=";
   if (!$("#conf-cp-radio")[0].checked) document.cookie = "confcolor=";
   if (!$("#gaze-cp-radio")[0].checked) document.cookie = "gazecolor=";
+  if (!$("#emo-cp-radio")[0].checked) document.cookie = "emocolor=";
 
   var list = localStorage.getItem("user_behavior");
   list_json = list ? JSON.parse(list) : [];
@@ -756,6 +858,7 @@ function handleColorpickerRadio() {
     defaultchart3: $("#eng-cp-radio")[0].checked,
     defaultchart2: $("#conf-cp-radio")[0].checked,
     defaultchart1: $("#gaze-cp-radio")[0].checked,
+    defaultchart4: $("#emo-cp-radio")[0].checked,
   });
   list = JSON.stringify(list_json);
   localStorage.setItem("user_behavior", list);

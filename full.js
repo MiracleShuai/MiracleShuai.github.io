@@ -20,6 +20,11 @@ var fullinterval0,
     confusion: 0,
     gaze: 0,
   },
+  emotionChartData = {
+    positive: 1,
+    negative: 1,
+    neutral: 1,
+  },
   emojiData = {
     total_ppl: 0,
     max_value: 0,

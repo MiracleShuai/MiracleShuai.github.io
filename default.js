@@ -53,6 +53,7 @@ var radialInterval1,
   default2 = 0,
   default3 = 0,
   default4 = 0,
+  emotionChart,
   slides = [],
   total_ppl = 0,
   threshold_value = {
@@ -73,6 +74,11 @@ var radialInterval1,
     emotion: 0,
     confusion: 0,
     gaze: 0,
+  },
+  emotionChartData = {
+    positive: 1,
+    negative: 1,
+    neutral: 1,
   },
   emojiData = {
     total_ppl: 0,
@@ -105,119 +111,6 @@ const chart_name = {
   engagement: "defaultchart3",
   gaze: "defaultchart1",
 };
-
-// const themes = {
-//   theme_orange: {
-//     default: {
-//       defaultTrigger: "254,240,217",
-//       defaultchart1: "227,74,51",
-//       defaultchart2: "252,141,89",
-//       defaultchart3: "253,204,138",
-//       defaultchart4: "179,0,0",
-//     },
-//     motor: [
-//       [0.1, "#fee8c8"],
-//       [0.5, "#fdbb84"],
-//       [0.9, "#e34a33"],
-//     ],
-//   },
-//   theme_blue: {
-//     default: {
-//       defaultTrigger: "239,243,255",
-//       defaultchart1: "49,130,189",
-//       defaultchart2: "107,174,214",
-//       defaultchart3: "189,215,231",
-//       defaultchart4: "8,81,156",
-//     },
-//     motor: [
-//       [0.1, "#deebf7"],
-//       [0.5, "#9ecae1"],
-//       [0.9, "#3182bd"],
-//     ],
-//   },
-//   theme_green: {
-//     default: {
-//       defaultTrigger: "237,248,233",
-//       defaultchart1: "49,163,84",
-//       defaultchart2: "116,196,118",
-//       defaultchart3: "186,228,179",
-//       defaultchart4: "0,109,44",
-//     },
-
-//     motor: [
-//       [0.1, "#e5f5e0"],
-//       [0.5, "#a1d99b"],
-//       [0.9, "#31a354"],
-//     ],
-//   },
-// };
-
-// function getServerData(theme) {
-//   // get data from backend
-//   $.ajax({
-//     url: "http://49.232.60.34:5000/get_class_information",
-//     type: "GET",
-//     success: function (res) {
-//       // console.log("getting data from backend");
-//       var live_data = JSON.parse(res);
-//       console.log(live_data);
-
-//       // get emoji data
-//       var emoji_data = {
-//         confusion: 0,
-//         smile: 0,
-//         headnod: 0,
-//         headshake: 0,
-//         drowsiness: 0,
-//         speaking: 0,
-//       };
-
-//       for (const [key, value] of Object.entries(emoji_data)) {
-//         var total = 0;
-//         emojiData.total_ppl = live_data.length;
-//         live_data.forEach((d) => {
-//           return (total += parseInt(d[key]));
-//         });
-//         // console.log(key, total);
-//         emoji_data[key] = total;
-//       }
-//       // get max value
-//       emojiData.max_value = Math.max(...Object.values(emoji_data));
-//       // find corresponding key
-//       emojiData.max_key = Object.keys(emoji_data).find(
-//         (key) => emoji_data[key] == emojiData.max_value
-//       );
-
-//       // get chart data
-//       Object.keys(chartData).forEach((name) => {
-//         var norm_data = 0;
-
-//         live_data.forEach((d) => {
-//           // console.log(parseFloat(d[name]));
-//           norm_data += parseFloat(d[name]);
-//         });
-//         norm_data /= live_data.length;
-
-//         // console.log(name, norm_data);
-//         chartData[name] = norm_data;
-//       });
-//       console.log("getServerData chartData", chartData);
-//       // console.log("normalized data:", norm_data);
-
-//       var name = "emotion";
-//       var x = [],
-//         y = [];
-//       live_data.forEach((d) => {
-//         x.push(parseFloat(d[name].split(" ")[0]));
-//         y.push(parseFloat(d[name].split(" ")[1]));
-//       });
-//       console.log("emotion", emotion);
-//       emotion = { x, y };
-
-//       checkAlert(theme);
-//     },
-//   });
-// }
 
 var borderIntervals = {
   confusion: null,
@@ -345,13 +238,13 @@ function loadDefaultWindow() {
   });
   console.log("confused:", confusedChartType);
 
-  var emoChartType,
-    emoChartName = "emocharttype";
+  var emotionChartType,
+    emotionChartName = "emotioncharttype";
   cookieList.forEach((val) => {
-    if (val.indexOf(emoChartName) === 0)
-      emoChartType = val.substring(emoChartName.length + 1);
+    if (val.indexOf(emotionChartName) === 0)
+      emotionChartType = val.substring(emotionChartName.length + 1);
   });
-  console.log("emo:", emoChartType);
+  console.log("emotion:", emotionChartType);
 
   // get threshold
   var gazeThresh,
@@ -422,6 +315,14 @@ function loadDefaultWindow() {
     });
     if (gazecolor) theme["default"]["defaultchart1"] = gazecolor;
 
+    var emocolor,
+      emocolorName = "emocolor";
+    cookieList.forEach((val) => {
+      if (val.indexOf(emocolorName) === 0)
+        emocolor = val.substring(emocolorName.length + 1);
+    });
+    if (emocolor) theme["default"]["defaultchart4"] = emocolor;
+
     // set theme
     for (const [key, value] of Object.entries(theme.default)) {
       console.log(`${key}: ${value}`);
@@ -467,6 +368,7 @@ function loadDefaultWindow() {
     // $("#defaultchart3").css("height", 120);
     $("#defaultchart1").css("width", width);
     // $("#defaultchart1").css("height", width + 50 - 100);
+    $("#defaultchart4").css("width", width);
     $("#defaultTrigger").css("width", width);
     // $("#defaultTrigger").css("height", width + 50);
     //   console.log(width);
@@ -521,20 +423,23 @@ function loadDefaultWindow() {
   });
 
   // draw default 4 emotion
-  // if (barInterval4) clearInterval(barInterval4);
-  // if (radialInterval4) clearInterval(radialInterval4);
-  // if (motorInterval4) clearInterval(motorInterval4);
-
-  // if (emoChartType == "Motor") {
-  //   drawMotorChart("defaultchart4", "Emotion", theme);
-  //   $("#defaultchart4").css("height", 120);
-  // } else if (emoChartType == "Radial") {
-  //   drawRadialChart("defaultchart4", "Emotion", theme);
-  //   $("#defaultchart4").css("height", 140);
-  // } else {
-  //   drawBarChart("defaultchart4", "Emotion", theme);
-  //   $("#defaultchart4").css("height", 90);
-  // }
+  var index = document.getElementById("emotion_mode");
+  if (emotionChartType == "3") {
+    $("#defaultchart4").css("height", 120);
+    $("#emotionchart").show();
+    $("#emotionwheel").hide();
+    drawEmotionChart();
+  } else if (emotionChartType == "4") {
+    $("#defaultchart4").css("height", 200);
+    $("#emotionchart").hide();
+    $("#emotionwheel").show();
+    index.innerHTML = "4";
+  } else {
+    $("#defaultchart4").css("height", 200);
+    $("#emotionchart").hide();
+    $("#emotionwheel").show();
+    index.innerHTML = "8";
+  }
 
   // trigger
   setInterval(function () {
@@ -958,6 +863,100 @@ function drawBarChart(container, name, theme, barInterval) {
   return barInterval;
 }
 
+function drawEmotionChart(theme) {
+  emotionChart = Highcharts.chart("emotionchart", {
+    colors: ["#f28482", "#adb5bd", "#90be6d"],
+    credits: false,
+    chart: {
+      plotBackgroundColor: null,
+      plotBorderWidth: 0,
+      plotShadow: false,
+      margin: [0, 0, 0, 0],
+      height: 110,
+      events: {
+        redraw: function () {
+          console.log("redraw", this.chartWidth);
+          if (image) image.destroy();
+          image = this.renderer.image(
+            `icon_img/Emotion.png`,
+            this.chartWidth / 2 - 10,
+            this.chartHeight / 2,
+            22,
+            22
+          );
+          image.add();
+        },
+      },
+    },
+    tooltip: {
+      enabled: false,
+    },
+    exporting: {
+      enabled: false,
+    },
+    title: {
+      text: "Emotion",
+      style: { fontSize: "13px" },
+    },
+    accessibility: {
+      point: {
+        valueSuffix: "%",
+      },
+    },
+
+    plotOptions: {
+      pie: {
+        dataLabels: {
+          enabled: false,
+          distance: 0,
+          style: {
+            fontWeight: "bold",
+            color: "white",
+          },
+        },
+        startAngle: -90,
+        endAngle: 90,
+        center: ["50%", "75%"],
+        size: "110%",
+      },
+    },
+    series: [
+      {
+        type: "pie",
+        name: "Browser share",
+        innerSize: "50%",
+        data: [
+          ["neg", 58.9],
+          ["neu", 13.29],
+          ["pos", 13],
+        ],
+      },
+    ],
+  });
+
+  image = emotionChart.renderer
+    .image(
+      `icon_img/Emotion.png`,
+      emotionChart.chartWidth / 2 - 10,
+      emotionChart.chartHeight / 2,
+      22,
+      22
+    )
+    .add();
+
+  var emotionInterval = setInterval(function () {
+    if (emotionChart.series) {
+      data = [
+        ["neg", emotionChartData.negative],
+        ["neu", emotionChartData.neutral],
+        ["pos", emotionChartData.positive],
+      ];
+      emotionChart.series[0].setData(data);
+      console.log("emotion chart set data", data);
+    }
+  }, 1000);
+}
+
 function handleDefaultChart1() {
   // get theme
   var cookieList = document.cookie.split("; ");
@@ -1135,6 +1134,56 @@ function handleDefaultChart3() {
   localStorage.setItem("user_behavior", list);
 }
 
+function handleDefaultChart4() {
+  console.log("handle default chart 4");
+
+  var list = localStorage.getItem("user_behavior");
+  list_json = list ? JSON.parse(list) : [];
+
+  var index = document.getElementById("emotion_mode");
+  if (default4 == 0) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart4",
+      type: "8",
+    });
+    $("#defaultchart4").css("height", 120);
+    $("#emotionchart").show();
+    $("#emotionwheel").hide();
+    drawEmotionChart();
+    document.cookie = "emotioncharttype=3";
+  } else if (default4 == 1) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart4",
+      type: "4",
+    });
+    console.log("emotionchart", $("#emotionchart"));
+    emotionChart.destroy();
+    $("#defaultchart4").css("height", 200);
+    $("#emotionchart").hide();
+    $("#emotionwheel").show();
+    index.innerHTML = "4";
+    document.cookie = "emotioncharttype=4";
+  } else if (default4 == 2) {
+    list_json.push({
+      time: time(),
+      action: "chart_type",
+      chart: "defaultchart4",
+      type: "8",
+    });
+
+    index.innerHTML = "8";
+    document.cookie = "emotioncharttype=8";
+  }
+  default4 = (default4 + 1) % 3;
+
+  list = JSON.stringify(list_json);
+  localStorage.setItem("user_behavior", list);
+}
+
 // function handleDefaultChart4() {
 //   // get theme
 //   var cookieList = document.cookie.split("; ");
@@ -1153,15 +1202,15 @@ function handleDefaultChart3() {
 
 //   if (default4 == 0) {
 //     drawMotorChart("defaultchart4", "Emotion", theme);
-//     document.cookie = "emocharttype=Motor";
+//     document.cookie = "emotioncharttype=Motor";
 //     $("#defaultchart4").css("height", 120);
 //   } else if (default4 == 1) {
 //     drawRadialChart("defaultchart4", "Emotion", theme);
-//     document.cookie = "emocharttype=Radial";
+//     document.cookie = "emotioncharttype=Radial";
 //     $("#defaultchart4").css("height", 140);
 //   } else {
 //     drawBarChart("defaultchart4", "Emotion", theme);
-//     document.cookie = "emocharttype=Bar";
+//     document.cookie = "emotioncharttype=Bar";
 //     $("#defaultchart4").css("height", 90);
 //   }
 //   default4 = (default4 + 1) % 3;

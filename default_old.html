@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
-    <title>In-class View</title>
+    <title>Sidebar Demo</title>
     <script src="main.js"></script>
     <script src="default.js"></script>
-    <script src="handle_emotion2.js"></script>
+    <script src="handle_emotion.js"></script>
 
     <script src="jquery/jquery-3.5.1.min.js"></script>
     <!-- <script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
@@ -40,13 +40,13 @@
     <script src="Highcharts-9.1.2/code/modules/solid-gauge.js"></script> -->
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="ztc_added2.css">
+    <link rel="stylesheet" href="ztc_added.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
 <body onresize="handleWindowResize()" onload="loadDefaultWindow()">
     <div class="container-fluid" style="padding-right: 5;">
-        <h5>In-class View</h5>
+        <h5>Default View</h5>
 
         <div class="btn-group btn-group-sm">
             <!-- full size -->
@@ -228,32 +228,26 @@
             <li>
                 <!-- default 4 emotional-->
                 <div class="card" id="defaultchart4"
-                    style="width: 18rem; height: 200px; margin:5px 0px; border-color: #03045e; border-width: 3px;padding: 1px; cursor:pointer">
-                    <div id="emotionchart" onclick="handleDefaultChart4()"></div>
-                    <div id="emotionwheel">
-                        <p id="data_test" style="font-size: xx-small;display: none"></p>
-                        <img src="emotionwheel_background/emotionwheel_4_bg.png" style="display: none;"
-                            id="emotion_wheel_img">
-                        <p id="emotion_title" style="font-size: 13px; text-align: center; padding: 5px;">Emotion Wheel
-                        </p>
-                        <div style="margin: auto;width: 90px;height: 90px;position: relative; top :-10px;overflow: hidden;"
-                            onclick="handleDefaultChart4()">
-                            <label id="emotion_mode" style="display: none;">4</label>
-                            <canvas width="3000px" height="3000px" id="emotion_wheel" style="background-image: url('emotionwheel_background/emotionwheel_4_bg.png');background-size:90px 90px;
+                    style="width: 18rem; height: 200px; margin:5px 0px; border-color: #03045e; border-width: 3px;padding: 1px; ">
+                    <p id="data_test" style="font-size: xx-small;display: none"></p>
+                    <img src="emotionwheel_background/emotionwheel.png" style="display: none;" id="emotion_wheel_img">
+                    <p id="emotion_title" style="font-size: 13px; text-align: center; padding: 5px;">Emotion Wheel
+                    </p>
+                    <div style="margin: auto;width: 90px;height: 90px;position: relative; top :-10px;overflow: hidden;">
+                        <canvas width="90px" height="90px" id="emotion_wheel" style="background-image: url('emotionwheel_background/emotionwheel_background.png');background-size:90px 90px;
                                 background-repeat: no-repeat;margin: auto;
-                                display: flex;align-items: center;justify-content: center;">
-                                Your explorer doesn't support canvas, please upload your explorer.
-                            </canvas>
-                        </div>
-                        <div style="margin: 0;padding: 0;text-align: center;">
-                            <label id="emotionThreshtext" for="emotionThresh" class="form-label"
-                                style="text-align: center;margin:0;padding: 0">
-                                > 0</label>
-                            <br>
-                            <input type="range" class="form-range" min="0" max="30" value="0" id="emotionThresh"
-                                style="width:5rem;align-self: center;margin:0;padding: 0"
-                                onchange="handleEmotionThreshChange()">
-                        </div>
+                                display: flex;align-items: center;justify-content: center">
+                            Your explorer doesn't support canvas, please upload your explorer.
+                        </canvas>
+                    </div>
+                    <div style="margin: 0;padding: 0;text-align: center;">
+                        <label id="emotionThreshtext" for="emotionThresh" class="form-label"
+                            style="text-align: center;margin:0;padding: 0">
+                            >= 1</label>
+                        <br>
+                        <input type="range" class="form-range" min="1" max="30" value="1" id="emotionThresh"
+                            style="width:5rem;align-self: center;margin:0;padding: 0"
+                            onchange="handleEmotionThreshChange()">
                     </div>
                 </div>
             </li>
