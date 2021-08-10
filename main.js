@@ -195,7 +195,7 @@ function getServerData(update, alert, theme = null) {
   emotionChartData = { negative: 1, positive: 1, neutral: 1 };
 
   $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information",
+    url: "https://shuaima.cc:5000/get_class_information_real",
     type: "GET",
     // async: false,
     success: function (res) {
