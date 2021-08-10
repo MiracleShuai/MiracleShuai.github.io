@@ -192,10 +192,10 @@ function getServerData(update, alert, theme = null) {
       neutral: 0,
     },
     cur_emo_line = { valence: 0, arousal: 0 };
-  //emotionChartData = { negative: 0, positive: 0, neutral: 0 };
+  emotionChartData = { negative: 1, positive: 1, neutral: 1 };
 
   $.ajax({
-    url: "https://shuaima.cc:5000/get_class_information_real",
+    url: "https://shuaima.cc:5000/get_class_information",
     type: "GET",
     // async: false,
     success: function (res) {
@@ -229,7 +229,6 @@ function getServerData(update, alert, theme = null) {
             total[key] += parseFloat(d[key].split(" ")[0]);
             var x = parseFloat(d[key].split(" ")[0]),
               y = parseFloat(d[key].split(" ")[1]);
-            console.log(x,y)
             if (x > 0.1 && y > 0.1) {
               cur_emo_percentage.upperRight += 1;
               emotionChartData.positive += 1;
