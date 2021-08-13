@@ -77,7 +77,7 @@ function updateSlides(slides) {
 }
 
 function loadFullWindow() {
-  setInterval(getServerData, 1000, true, false);
+  setInterval(getServerData, 5000, true, false);
 
   // get slides img path
   $.ajax({
