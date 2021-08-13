@@ -332,7 +332,7 @@ function loadDefaultWindow() {
     }
 
     console.log("theme", theme);
-    setInterval(getServerData, 2000, false, true, theme);
+    setInterval(getServerData, 5000, false, true, theme);
 
     // make it sortable
     // $("#draggable").draggable();
