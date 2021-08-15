@@ -192,6 +192,10 @@ function getServerData(update, alert, theme = null) {
       neutral: 0,
     },
     cur_emo_line = { valence: 0, arousal: 0 };
+  console.log('马帅想看看这里到底有没有一直累积')
+  console.log(emotionChartData.negative);
+  console.log(emotionChartData.neutral);
+  console.log(emotionChartData.positive);
   //emotionChartData = { negative: 0, positive: 0, neutral: 0 };
 
   $.ajax({
@@ -222,6 +226,7 @@ function getServerData(update, alert, theme = null) {
 
       for (const [key, value] of Object.entries(total)) {
         if (key == "emotion") {
+          emotionChartData = { negative: 0, positive: 0, neutral: 0 };
           data.forEach((d) => {
             new_log["valence"].push(d[key].split(" ")[0]);
             new_log["arousal"].push(d[key].split(" ")[1]);
